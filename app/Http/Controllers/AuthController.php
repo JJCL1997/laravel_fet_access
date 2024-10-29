@@ -13,28 +13,42 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
+            'nombres' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'codigo' => 'required|string|max:255|unique:users',
+            'telefono' => 'nullable|string|max:15',
             'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|string|in:admin,student,vigilant'
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+            $errors = $validator->errors();
+            if ($errors->has('email') && $errors->has('codigo')) {
+                return response()->json(['message' => 'El correo y  código ya están registrados.'], 400);
+            } elseif ($errors->has('email')) {
+                return response()->json(['message' => 'El correo ya está registrado.'], 400);
+            } elseif ($errors->has('codigo')) {
+                return response()->json(['message' => 'Código ya registrado.'], 400);
+            }
+            return response()->json(['message' => 'Validación fallida', 'errors' => $errors], 400);
         }
 
         $user = User::create([
-            'name' => $request->name,
+            'nombres' => $request->nombres,
+            'apellidos' => $request->apellidos,
             'email' => $request->email,
+            'codigo' => $request->codigo,
+            'telefono' => $request->telefono,
             'password' => Hash::make($request->password),
+            'role' => $request->role
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Usuario registrado exitosamente',
-            'token' => $token
-        ], 201);
+        return response()->json(['message' => 'Usuario registrado exitosamente', 'user' => $user], 201);
     }
+
+
+
 
     // Login de usuario
     public function login(Request $request)
@@ -54,7 +68,15 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Inicio de sesión exitoso',
-            'token' => $token
+            'token' => $token,
+            'user' => [
+                'nombres' => $user->nombres,
+                'apellidos' => $user->apellidos,
+                'email' => $user->email,
+                'codigo' => $user->codigo,
+                'telefono' => $user->telefono,
+                'role' => $user->role
+            ]
         ]);
     }
 
@@ -67,4 +89,3 @@ class AuthController extends Controller
         return response()->json(['message' => 'Cierre de sesión exitoso']);
     }
 }
-

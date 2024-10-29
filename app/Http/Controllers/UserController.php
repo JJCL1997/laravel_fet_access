@@ -7,33 +7,41 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
-class StudentController extends Controller
+class UserController extends Controller
 {
+    /**
+     * Obtener todos los usuarios con rol específico.
+     */
     public function index()
 {
-    // Obtener todos los usuarios con rol de estudiante o vigilante
-    $users = User::whereIn('role', ['student', 'vigilant'])->get();
-    return response()->json($users);
+    return response()->json(User::all());
 }
 
+
+    /**
+     * Mostrar un usuario específico.
+     */
     public function show($id)
 {
-    // Buscar el usuario por id que tenga rol de estudiante o vigilante
-    $user = User::whereIn('role', ['student', 'vigilant'])->find($id);
+    $user = User::find($id);
 
     if (!$user) {
         return response()->json(['message' => 'Usuario no encontrado'], 404);
     }
 
-    return response()->json($user);
+    return response()->json($user, 200);
 }
 
+
+    /**
+     * Actualizar un usuario específico.
+     */
     public function update(Request $request, $id)
     {
-        $student = User::where('role', 'student')->find($id);
+        $user = User::find($id);
 
-        if (!$student) {
-            return response()->json(['message' => 'Estudiante no encontrado'], 404);
+        if (!$user) {
+            return response()->json(['message' => 'Usuario no encontrado'], 404);
         }
 
         $validator = Validator::make($request->all(), [
@@ -49,7 +57,7 @@ class StudentController extends Controller
             return response()->json($validator->errors(), 400);
         }
 
-        $student->update($request->only([
+        $user->update($request->only([
             'nombres',
             'apellidos',
             'email',
@@ -58,19 +66,22 @@ class StudentController extends Controller
         ]));
 
         if ($request->filled('password')) {
-            $student->password = Hash::make($request->password);
-            $student->save();
+            $user->password = Hash::make($request->password);
+            $user->save();
         }
 
-        return response()->json(['message' => 'Estudiante actualizado exitosamente', 'student' => $student]);
+        return response()->json(['message' => 'Usuario actualizado exitosamente', 'user' => $user]);
     }
 
+    /**
+     * Actualización parcial de un usuario.
+     */
     public function patchUpdate(Request $request, $id)
     {
-        $student = User::where('role', 'student')->find($id);
+        $user = User::find($id);
 
-        if (!$student) {
-            return response()->json(['message' => 'Estudiante no encontrado'], 404);
+        if (!$user) {
+            return response()->json(['message' => 'Usuario no encontrado'], 404);
         }
 
         $validator = Validator::make($request->all(), [
@@ -86,7 +97,7 @@ class StudentController extends Controller
             return response()->json($validator->errors(), 400);
         }
 
-        $student->update($request->only([
+        $user->update($request->only([
             'nombres',
             'apellidos',
             'email',
@@ -95,23 +106,26 @@ class StudentController extends Controller
         ]));
 
         if ($request->filled('password')) {
-            $student->password = Hash::make($request->password);
-            $student->save();
+            $user->password = Hash::make($request->password);
+            $user->save();
         }
 
-        return response()->json(['message' => 'Estudiante actualizado parcialmente', 'student' => $student]);
+        return response()->json(['message' => 'Usuario actualizado parcialmente', 'user' => $user]);
     }
 
+    /**
+     * Eliminar un usuario específico.
+     */
     public function destroy($id)
     {
-        $student = User::where('role', 'student')->find($id);
+        $user = User::find($id);
 
-        if (!$student) {
-            return response()->json(['message' => 'Estudiante no encontrado'], 404);
+        if (!$user) {
+            return response()->json(['message' => 'Usuario no encontrado'], 404);
         }
 
-        $student->delete();
+        $user->delete();
 
-        return response()->json(['message' => 'Estudiante eliminado exitosamente']);
+        return response()->json(['message' => 'Usuario eliminado exitosamente']);
     }
 }
