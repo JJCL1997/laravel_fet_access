@@ -5,25 +5,53 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\QRController;
 use App\Http\Controllers\UserController;
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+use App\Http\Controllers\VisitorController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\AccessLogController;
 
 
 Route::post('/login', [AuthController::class, 'login']); 
-Route::post('/register', [AuthController::class, 'register']); 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
+Route::get('/generate-visitor-qr', [QRController::class, 'generateVisitorRegistrationQrCode']);
+
+Route::post('/visitors', [VisitorController::class, 'registerAndLogAccess']);
+Route::post('/visitor/register', [VisitorController::class, 'registerAndLogAccess'])->name('visitor.registration.form');
+
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
+
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-    Route::get('/users', [UserController::class, 'index']); // Obtener todos los usuarios (estudiantes y vigilantes)
-    Route::get('/users/{id}', [UserController::class, 'show']); // Mostrar un usuario específico
-    Route::post('/users}', [UserController::class, 'store']); 
-    Route::put('/users/{id}', [UserController::class, 'update']); // Actualizar un usuario específico
-    Route::patch('/users/{id}', [UserController::class, 'patchUpdate']); // Actualización parcial de un usuario
-    Route::delete('/users/{id}', [UserController::class, 'destroy']); // Eliminar un usuario
+
+    Route::get('/users', [UserController::class, 'index']); 
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']); 
+    Route::patch('/users/{id}', [UserController::class, 'patchUpdate']); 
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::post('/register', [AuthController::class, 'register']); 
+
+    Route::get('/visitors/{id}', [VisitorController::class, 'show']);
+    Route::get('/visitors', [VisitorController::class, 'index']);
+    Route::put('/visitors/{id}', [VisitorController::class, 'update']);
+    Route::delete('/visitors/{id}', [VisitorController::class, 'destroy']);
+    Route::patch('/visitors/{id}', [VisitorController::class, 'patchUpdate']);
+    
+    Route::get('/access-logs', [AccessLogController::class, 'index']);
+    // Route::post('/access-logs', [AccessLogController::class, 'store']);
+    Route::get('/access-logs/{id}', [AccessLogController::class, 'show']);
+    // Route::put('/access-logs/{id}', [AccessLogController::class, 'update']);
+    Route::delete('/access-logs/{id}', [AccessLogController::class, 'destroy']);
 });
 
+Route::middleware(['auth:sanctum', 'role:student'])->group(function () {
+    Route::get('/generate-qr', [QRController::class, 'generateQrCode']);
+    Route::get('/student/profile', [StudentController::class, 'showProfile']);
+    Route::post('/student/update-profile', [StudentController::class, 'updateProfile']);
+    Route::post('/user/update-password', [StudentController::class, 'updatePassword']);
 
+});
 
-Route::middleware(['auth:sanctum', 'role:student'])->get('/generate-qr', [QRController::class, 'generateQrCode']);
+Route::middleware(['auth:sanctum', 'role:vigilant'])->group(function () {
+    Route::post('/validate-qr', [QRController::class, 'validateQrCode']);
+});

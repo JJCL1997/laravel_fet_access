@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Middleware;
 
 use Closure;
@@ -14,8 +15,8 @@ class RoleMiddleware
             return response()->json(['message' => 'Acceso no autorizado. Debes iniciar sesión.'], 401);
         }
 
-        // Verificar si el rol del usuario coincide con el rol requerido
-        if (Auth::user()->role !== $role) {
+        // Verificar si el usuario tiene el rol adecuado
+        if (!Auth::user()->role || Auth::user()->role->role_name !== $role) {
             return response()->json(['message' => 'Acceso no autorizado. No tienes el rol adecuado.'], 403);
         }
 

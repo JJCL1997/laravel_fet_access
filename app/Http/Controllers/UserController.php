@@ -9,33 +9,50 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-    /**
-     * Obtener todos los usuarios con rol específico.
-     */
     public function index()
-{
-    return response()->json(User::all());
-}
+    {
+        // Incluye el rol en la respuesta para cada usuario
+        $users = User::with('role')->get();
 
+        // Modifica la respuesta para incluir el nombre del rol
+        $users = $users->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'nombres' => $user->nombres,
+                'apellidos' => $user->apellidos,
+                'email' => $user->email,
+                'codigo' => $user->codigo,
+                'telefono' => $user->telefono,
+                'role' => $user->role->role_name, // Incluye el nombre del rol
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ];
+        });
 
-    /**
-     * Mostrar un usuario específico.
-     */
-    public function show($id)
-{
-    $user = User::find($id);
-
-    if (!$user) {
-        return response()->json(['message' => 'Usuario no encontrado'], 404);
+        return response()->json($users, 200);
     }
 
-    return response()->json($user, 200);
-}
+    public function show($id)
+    {
+        $user = User::with('role')->find($id);
 
+        if (!$user) {
+            return response()->json(['message' => 'Usuario no encontrado'], 404);
+        }
 
-    /**
-     * Actualizar un usuario específico.
-     */
+        return response()->json([
+            'id' => $user->id,
+            'nombres' => $user->nombres,
+            'apellidos' => $user->apellidos,
+            'email' => $user->email,
+            'codigo' => $user->codigo,
+            'telefono' => $user->telefono,
+            'role' => $user->role->role_name, // Incluye el nombre del rol
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+        ], 200);
+    }
+
     public function update(Request $request, $id)
     {
         $user = User::find($id);
@@ -51,6 +68,7 @@ class UserController extends Controller
             'codigo' => 'sometimes|string|max:255|unique:users,codigo,' . $id,
             'telefono' => 'sometimes|string|max:15',
             'password' => 'sometimes|string|min:8',
+            'role_id' => 'sometimes|exists:roles,id' // Valida el ID del rol
         ]);
 
         if ($validator->fails()) {
@@ -63,6 +81,7 @@ class UserController extends Controller
             'email',
             'codigo',
             'telefono',
+            'role_id', // Permite la actualización del rol
         ]));
 
         if ($request->filled('password')) {
@@ -73,9 +92,6 @@ class UserController extends Controller
         return response()->json(['message' => 'Usuario actualizado exitosamente', 'user' => $user]);
     }
 
-    /**
-     * Actualización parcial de un usuario.
-     */
     public function patchUpdate(Request $request, $id)
     {
         $user = User::find($id);
@@ -90,7 +106,8 @@ class UserController extends Controller
             'email' => 'sometimes|string|email|max:255|unique:users,email,' . $id,
             'codigo' => 'sometimes|string|max:255|unique:users,codigo,' . $id,
             'telefono' => 'sometimes|string|max:15',
-            'password' => 'sometimes|string|min:8'
+            'password' => 'sometimes|string|min:8',
+            'role_id' => 'sometimes|exists:roles,id' // Valida el ID del rol
         ]);
 
         if ($validator->fails()) {
@@ -103,6 +120,7 @@ class UserController extends Controller
             'email',
             'codigo',
             'telefono',
+            'role_id', // Permite la actualización del rol
         ]));
 
         if ($request->filled('password')) {
@@ -113,9 +131,6 @@ class UserController extends Controller
         return response()->json(['message' => 'Usuario actualizado parcialmente', 'user' => $user]);
     }
 
-    /**
-     * Eliminar un usuario específico.
-     */
     public function destroy($id)
     {
         $user = User::find($id);
@@ -128,4 +143,6 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Usuario eliminado exitosamente']);
     }
+
+    
 }

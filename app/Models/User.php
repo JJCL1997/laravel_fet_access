@@ -11,13 +11,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    // Constantes para los roles
-    const ROLE_ADMIN = 'admin';
-    const ROLE_STUDENT = 'student';
-    const ROLE_VIGILANT = 'vigilant';
-
     /**
-     * The attributes that are mass assignable.
+     * Los atributos que se pueden asignar en masa.
      *
      * @var array<int, string>
      */
@@ -26,13 +21,15 @@ class User extends Authenticatable
         'apellidos',
         'email',
         'password',
-        'codigo',   // Añadir 'codigo' como atributo rellenable
-        'telefono', // Añadir 'telefono' como atributo rellenable
-        'role',     // Añadir 'role' como atributo rellenable
+        'codigo',
+        'telefono',
+        'role_id',
+        'last_qr_token',
+        'profile_photo' // Nuevo campo para la foto de perfil
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Los atributos que deben estar ocultos para la serialización.
      *
      * @var array<int, string>
      */
@@ -42,7 +39,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
+     * Los atributos que deben ser casteados.
      *
      * @var array<string, string>
      */
@@ -51,19 +48,43 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    // Métodos para verificar el rol del usuario
+    /**
+     * Relación con la tabla de roles.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Método para verificar si el usuario es administrador.
+     *
+     * @return bool
+     */
     public function isAdmin()
     {
-        return $this->role === self::ROLE_ADMIN;
+        return $this->role && $this->role->role_name === 'admin';
     }
 
+    /**
+     * Método para verificar si el usuario es estudiante.
+     *
+     * @return bool
+     */
     public function isStudent()
     {
-        return $this->role === self::ROLE_STUDENT;
+        return $this->role && $this->role->role_name === 'student';
     }
 
+    /**
+     * Método para verificar si el usuario es vigilante.
+     *
+     * @return bool
+     */
     public function isVigilant()
     {
-        return $this->role === self::ROLE_VIGILANT;
+        return $this->role && $this->role->role_name === 'vigilant';
     }
 }
