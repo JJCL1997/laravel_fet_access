@@ -11,42 +11,58 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 class AuthController extends Controller
 {
-        public function register(Request $request)
-        {
-            $validator = Validator::make($request->all(), [
-                'nombres' => 'required|string|max:255',
-                'apellidos' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users',
-                'codigo' => 'required|string|max:255|unique:users',
-                'telefono' => 'nullable|string|max:15',
-                'password' => 'required|string|min:8|confirmed',
-                'role_id' => 'required|exists:roles,id' // Verifica que el role_id exista en la tabla roles
-            ]);
+    public function register(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'nombres' => 'required|string|max:255',
+        'apellidos' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'codigo' => 'required|string|max:255|unique:users',
+        'telefono' => 'nullable|string|max:15',
+        'password' => 'required|string|min:8|confirmed',
+        'role_id' => 'required|exists:roles,id' // Verifica que el role_id exista en la tabla roles
+    ]);
 
-            if ($validator->fails()) {
-                $errors = $validator->errors();
-                if ($errors->has('email') && $errors->has('codigo')) {
-                    return response()->json(['message' => 'El correo y el código ya están registrados.'], 400);
-                } elseif ($errors->has('email')) {
-                    return response()->json(['message' => 'El correo ya está registrado.'], 400);
-                } elseif ($errors->has('codigo')) {
-                    return response()->json(['message' => 'Código ya registrado.'], 400);
-                }
-                return response()->json(['message' => 'Validación fallida', 'errors' => $errors], 400);
+    if ($validator->fails()) {
+        $errors = $validator->errors();
+
+        // Verifica errores específicos para mensajes personalizados
+        if ($errors->has('email') && $errors->has('codigo')) {
+            return response()->json(['message' => 'El correo y el código ya están registrados.'], 400);
+        } elseif ($errors->has('email')) {
+            return response()->json(['message' => 'El correo ya está registrado.'], 400);
+        } elseif ($errors->has('codigo')) {
+            return response()->json(['message' => 'Código ya registrado.'], 400);
+        } elseif ($errors->has('password')) {
+            // Verifica si el error de la contraseña es por longitud mínima
+            if ($errors->first('password') === 'The password field must be at least 8 characters.') {
+                return response()->json(['message' => 'La contraseña debe tener al menos 8 caracteres.'], 400);
             }
-
-            $user = User::create([
-                'nombres' => $request->nombres,
-                'apellidos' => $request->apellidos,
-                'email' => $request->email,
-                'codigo' => $request->codigo,
-                'telefono' => $request->telefono,
-                'password' => Hash::make($request->password),
-                'role_id' => $request->role_id
-            ]);
-
-            return response()->json(['message' => 'Usuario registrado exitosamente', 'user' => $user], 201);
+            // Verifica si el error de la contraseña es por confirmación
+            if ($errors->first('password') === 'The password confirmation does not match.') {
+                return response()->json(['message' => 'La confirmación de la contraseña no coincide.'], 400);
+            }
         }
+
+        // Respuesta general para otros errores de validación
+        return response()->json(['message' => 'Validación fallida', 'errors' => $errors], 400);
+    }
+
+    // Creación del usuario en la base de datos
+    $user = User::create([
+        'nombres' => $request->nombres,
+        'apellidos' => $request->apellidos,
+        'email' => $request->email,
+        'codigo' => $request->codigo,
+        'telefono' => $request->telefono,
+        'password' => Hash::make($request->password),
+        'role_id' => $request->role_id
+    ]);
+
+    // Respuesta de éxito
+    return response()->json(['message' => 'Usuario registrado exitosamente', 'user' => $user], 201);
+}
+
 
     public function login(Request $request)
     {

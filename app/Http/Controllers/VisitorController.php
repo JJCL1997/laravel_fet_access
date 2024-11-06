@@ -162,15 +162,20 @@ class VisitorController extends Controller
     
     // Eliminar un visitante
     public function destroy($id)
-    {
-        $visitor = Visitor::find($id);
+{
+    $visitor = Visitor::find($id);
 
-        if (!$visitor) {
-            return response()->json(['message' => 'Visitante no encontrado'], 404);
-        }
-
-        $visitor->delete();
-
-        return response()->json(['message' => 'Visitante eliminado exitosamente'], 200);
+    if (!$visitor) {
+        return response()->json(['message' => 'Visitante no encontrado'], 404);
     }
+
+    // Actualiza los registros de acceso para que el campo visitor_id sea NULL
+    \DB::table('access_logs')->where('visitor_id', $id)->update(['visitor_id' => null]);
+
+    // Elimina el visitante
+    $visitor->delete();
+
+    return response()->json(['message' => 'Visitante eliminado exitosamente'], 200);
+}
+
 }
