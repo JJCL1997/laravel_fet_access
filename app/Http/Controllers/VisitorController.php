@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Visitor;
 use App\Models\AccessLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; // Asegúrate de incluir esta línea para usar DB
 
 class VisitorController extends Controller
 {
@@ -20,7 +21,7 @@ class VisitorController extends Controller
                     'string',
                     'unique:visitors,identificacion',
                 ],
-                'telefono' => 'nullable|string|max:15',
+                'telefono' => 'nullable|integer|digits_between:1,15', // Solo permite números y longitud de 1 a 15
                 'motivo_visita' => 'nullable|string',
                 'vehicle_type' => 'nullable|string|max:50',
                 'vehicle_plate' => 'nullable|string|max:7',
@@ -28,7 +29,7 @@ class VisitorController extends Controller
                 // Mensaje personalizado para identificación duplicada
                 'identificacion.unique' => 'Ya existe un visitante registrado con esta identificación.',
             ]);
-    
+
             // Registrar o encontrar al visitante
             $visitor = Visitor::updateOrCreate(
                 ['identificacion' => $validated['identificacion']],
@@ -39,7 +40,7 @@ class VisitorController extends Controller
                     'motivo_visita' => $validated['motivo_visita'] ?? null,
                 ]
             );
-    
+
             // Registrar el acceso
             $accessLog = AccessLog::create([
                 'visitor_id' => $visitor->id,
@@ -50,13 +51,13 @@ class VisitorController extends Controller
                 'vehicle_type' => $validated['vehicle_type'] ?? null,
                 'vehicle_plate' => $validated['vehicle_plate'] ?? null,
             ]);
-    
+
             return response()->json([
                 'message' => 'Visitante y acceso registrados exitosamente.',
                 'visitor' => $visitor,
                 'access_log' => $accessLog,
             ], 201);
-    
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Error de validación',
@@ -64,13 +65,11 @@ class VisitorController extends Controller
             ], 422);
         }
     }
-    
 
     public function showRegistrationForm()
-{
-    return view('visitor.register'); // Esto muestra la vista con el formulario
-}
-
+    {
+        return view('visitor.register'); // Esto muestra la vista con el formulario
+    }
 
     public function index()
     {
@@ -78,42 +77,41 @@ class VisitorController extends Controller
         $visitors = Visitor::with('latestAccessLog')->get();
         return response()->json($visitors, 200);
     }
-    
+
     public function show($id)
-{
-    $visitor = Visitor::with(['latestAccessLog' => function ($query) {
-        $query->select('log_id', 'visitor_id', 'vehicle_type', 'vehicle_plate', 'access_time'); // Seleccionar solo los campos necesarios
-    }])->find($id);
+    {
+        $visitor = Visitor::with(['latestAccessLog' => function ($query) {
+            $query->select('log_id', 'visitor_id', 'vehicle_type', 'vehicle_plate', 'access_time'); // Seleccionar solo los campos necesarios
+        }])->find($id);
 
-    if (!$visitor) {
-        return response()->json(['message' => 'Visitante no encontrado'], 404);
+        if (!$visitor) {
+            return response()->json(['message' => 'Visitante no encontrado'], 404);
+        }
+
+        return response()->json($visitor, 200);
     }
-
-    return response()->json($visitor, 200);
-}
-
 
     public function update(Request $request, $id)
     {
         $visitor = Visitor::find($id);
-    
+
         if (!$visitor) {
             return response()->json(['message' => 'Visitante no encontrado'], 404);
         }
-    
+
         $validated = $request->validate([
             'nombres' => 'sometimes|string|max:255',
             'apellidos' => 'sometimes|string|max:255',
             'identificacion' => 'sometimes|string|unique:visitors,identificacion,' . $id,
-            'telefono' => 'nullable|string|max:15',
+            'telefono' => 'nullable|integer|digits_between:1,15', // Validación actualizada
             'motivo_visita' => 'nullable|string',
             'vehicle_type' => 'nullable|string|max:50',
             'vehicle_plate' => 'nullable|string|max:7',
         ]);
-    
+
         // Actualizar los datos del visitante
         $visitor->update($validated);
-    
+
         // Actualizar los datos de acceso del último log, incluyendo `user_name`
         if ($visitor->latestAccessLog) {
             $visitor->latestAccessLog()->update([
@@ -122,32 +120,31 @@ class VisitorController extends Controller
                 'user_name' => "{$visitor->nombres} {$visitor->apellidos}", // Actualiza el nombre completo
             ]);
         }
-    
+
         return response()->json(['message' => 'Visitante y datos de acceso actualizados exitosamente', 'visitor' => $visitor], 200);
     }
-    
-    
+
     public function patchUpdate(Request $request, $id)
     {
         $visitor = Visitor::find($id);
-    
+
         if (!$visitor) {
             return response()->json(['message' => 'Visitante no encontrado'], 404);
         }
-    
+
         $validated = $request->validate([
             'nombres' => 'sometimes|string|max:255',
             'apellidos' => 'sometimes|string|max:255',
             'identificacion' => 'sometimes|string|unique:visitors,identificacion,' . $id,
-            'telefono' => 'nullable|string|max:15',
+            'telefono' => 'nullable|integer|digits_between:1,15', // Validación actualizada
             'motivo_visita' => 'nullable|string',
             'vehicle_type' => 'nullable|string|max:50',
             'vehicle_plate' => 'nullable|string|max:7',
         ]);
-    
+
         // Actualizar los datos del visitante
         $visitor->update($validated);
-    
+
         // Actualizar los datos de acceso del último log, incluyendo `user_name`
         if ($visitor->latestAccessLog) {
             $visitor->latestAccessLog()->update([
@@ -156,26 +153,25 @@ class VisitorController extends Controller
                 'user_name' => "{$visitor->nombres} {$visitor->apellidos}", // Actualiza el nombre completo
             ]);
         }
-    
+
         return response()->json(['message' => 'Visitante y datos de acceso actualizados parcialmente', 'visitor' => $visitor], 200);
     }
-    
+
     // Eliminar un visitante
     public function destroy($id)
-{
-    $visitor = Visitor::find($id);
+    {
+        $visitor = Visitor::find($id);
 
-    if (!$visitor) {
-        return response()->json(['message' => 'Visitante no encontrado'], 404);
+        if (!$visitor) {
+            return response()->json(['message' => 'Visitante no encontrado'], 404);
+        }
+
+        // Actualiza los registros de acceso para que el campo visitor_id sea NULL
+        DB::table('access_logs')->where('visitor_id', $id)->update(['visitor_id' => null]);
+
+        // Elimina el visitante
+        $visitor->delete();
+
+        return response()->json(['message' => 'Visitante eliminado exitosamente'], 200);
     }
-
-    // Actualiza los registros de acceso para que el campo visitor_id sea NULL
-    \DB::table('access_logs')->where('visitor_id', $id)->update(['visitor_id' => null]);
-
-    // Elimina el visitante
-    $visitor->delete();
-
-    return response()->json(['message' => 'Visitante eliminado exitosamente'], 200);
-}
-
 }
